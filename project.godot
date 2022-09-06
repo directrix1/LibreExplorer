@@ -11,7 +11,12 @@ config_version=4
 [application]
 
 config/name="Libre Explorer"
+run/main_scene="res://PanoramicViewer.tscn"
 config/icon="res://icon.png"
+
+[editor]
+
+main_run_args="../test_panos/test1.jpg"
 
 [gui]
 
