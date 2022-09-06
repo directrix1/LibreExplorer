@@ -2,5 +2,5 @@
 
 ## About
 
-LibreExplorer is software to create or tour 3-dimensional spaces with the primary presentation achieved via hyperlink overlayed panoramic images.
+LibreExplorer is software to create or tour 3-dimensional spaces primarily via hyperlink-overlayed panoramic images in two dimensions or in VR.
 
