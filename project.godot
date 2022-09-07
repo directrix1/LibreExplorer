@@ -16,7 +16,7 @@ config/icon="res://icon.png"
 
 [editor]
 
-main_run_args="../test_panos/test1.jpg"
+main_run_args="../test_panos"
 
 [gui]
 

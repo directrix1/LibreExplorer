@@ -21,7 +21,11 @@ extends Spatial
 
 # Declare member variables here. Examples:
 onready var bgSky = $WorldEnvironment.environment.background_sky
-onready var camera = $Camera
+
+var camera
+
+var isVR
+
 var tiltPerSecond = 0.0
 var panPerSecond = 0.0
 
@@ -42,27 +46,87 @@ var lastMousePos = null
 var mousePos = null
 var mousePressed = false
 
+var folderBase = ''
+var selectedImage = 0
+
+var images = []
+
 func showUsage():
 	print(
 	"Usage:\n" +
-	"\tlibreexplorer {path_to_filename.jpg}\n"
+	"\t libreexplorer {\n" +
+	"\t\t path_to_libreexplorer.json |\n" +
+	"\t\t path_to_folder_containing_libreexplorer.json |\n" +
+	"\t\t path_to_filename.jpg |\n" +
+	"\t\t path_to_folder_containing_jpgs |\n" +
+	"\t }\n"
 	)
 	get_tree().quit()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	var cla = OS.get_cmdline_args()
-	if len(cla) == 1:
-		var filename = cla[0].to_lower()
-		if filename.ends_with(".jpg") || filename.ends_with(".jpeg"):
-			showPanoramicImage(cla[0])
+	# TODO: Add VR condition camera selection
+	# 2D display
+	camera = $Cameras/Camera
+	isVR = false
+	
+	# Enable selected camera
+	camera.current = true
+	
+	if len(cla) != 1:
+		showUsage()
+	
+	var inPath = cla[0]
+	if OS.get_name() in ["Windows", "WinRT"]:
+		# Maybe this will work for Windows paths
+		var t = ""
+		for i in inPath.split("\\"):
+			t += "/" + i.replace("/", "\\/")
+		inPath = t
+
+	var dir = Directory.new()
+	var file = File.new()
+	if dir.dir_exists(inPath):
+		if dir.open(inPath) == OK:
+			folderBase = inPath
+			if !folderBase.ends_with('/'):
+				folderBase += '/'
+			dir.list_dir_begin()
+			var file_name = dir.get_next()
+			while file_name != "":
+				if !dir.current_is_dir():
+					tryLoadFile(folderBase + file_name)
+				file_name = dir.get_next()
+			dir.list_dir_end()
 		else:
+			print("An error occurred when trying to access the path.\n\n")
+			showUsage()
+	elif file.file_exists(inPath):
+		if !tryLoadFile(inPath):
 			showUsage()
 	else:
 		showUsage()
-			
+	
+	showPanoramicImage(images[selectedImage])
+	
 	setZoom(70.0)
 	get_tree().get_root().connect("size_changed", self, "on_resize")
+
+func selectImage(afile):
+	jumpToImage(images.find(afile))
+
+func jumpToImage(idx):
+	selectedImage = max(min(idx, len(images)-1), 0)
+	showPanoramicImage(images[selectedImage])
+
+func tryLoadFile(afile):
+	var lowerFilename = afile.to_lower()
+	if lowerFilename.ends_with(".jpg") || lowerFilename.ends_with(".jpeg"):
+		images.append(afile)
+		return true
+	else:
+		return false
 
 func on_resize():
 	setZoom(curZoom)
@@ -94,6 +158,12 @@ func panTiltCam(pan, tilt):
 	camera.rotate_object_local(Vector3(1,0,0), deg2rad(camTilt))	
 
 func _input(ev):
+	if ev is InputEventKey and !ev.pressed:
+		if ev.scancode==KEY_LEFT:
+			jumpToImage(selectedImage-1)
+		elif ev.scancode==KEY_RIGHT:
+			jumpToImage(selectedImage+1)
+	
 	if ev is InputEventMouseButton:
 		if ev.button_index == BUTTON_LEFT:
 			mousePressed = ev.pressed
